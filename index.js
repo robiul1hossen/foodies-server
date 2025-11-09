@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 3000;
 const app = express();
 
@@ -33,6 +33,12 @@ async function run() {
     app.post("/all-reviews", async (req, res) => {
       const newReview = req.body;
       const result = await allReviewsColl.insertOne(newReview);
+      res.send(result);
+    });
+    app.get("/review-derails/:id", async (req, res) => {
+      const { id } = req.params;
+      const query = { _id: new ObjectId(id) };
+      const result = await allReviewsColl.findOne(query);
       res.send(result);
     });
     app.get("/all-reviews", async (req, res) => {
