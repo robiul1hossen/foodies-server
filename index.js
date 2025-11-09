@@ -25,19 +25,25 @@ async function run() {
     const myReviewsColl = reviews.collection("myReviews");
     const allReviewsColl = reviews.collection("allReviews");
 
-    app.post("/my-reviews", async (req, res) => {
-      const newReview = req.body;
-      const result = await myReviewsColl.insertOne(newReview);
-      res.send(result);
-    });
+    // app.post("/my-reviews", async (req, res) => {
+    //   const newReview = req.body;
+    //   const result = await myReviewsColl.insertOne(newReview);
+    //   res.send(result);
+    // });
     app.post("/all-reviews", async (req, res) => {
       const newReview = req.body;
       const result = await allReviewsColl.insertOne(newReview);
       res.send(result);
     });
+    app.post("/add-review", async (req, res) => {
+      const reviewData = req.body;
+      const result = myReviewsColl.insertOne(reviewData);
+      res.send(result);
+    });
     app.get("/review-derails/:id", async (req, res) => {
       const { id } = req.params;
-      const query = { _id: new ObjectId(id) };
+      // const query = { _id: new ObjectId(id) };
+      const query = { _id: id };
       const result = await allReviewsColl.findOne(query);
       res.send(result);
     });
@@ -51,6 +57,16 @@ async function run() {
         .sort({ rating: -1 })
         .limit(6)
         .toArray();
+      res.send(result);
+    });
+    app.get("/my-review", async (req, res) => {
+      const { email } = req.query;
+      console.log(email);
+      const query = {};
+      if (email) {
+        query.reviewerEmail = email;
+      }
+      const result = await myReviewsColl.find(query).toArray();
       res.send(result);
     });
 
