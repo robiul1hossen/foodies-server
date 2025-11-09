@@ -22,14 +22,8 @@ async function run() {
     await client.connect();
 
     const reviews = client.db("reviews");
-    const myReviewsColl = reviews.collection("myReviews");
     const allReviewsColl = reviews.collection("allReviews");
 
-    // app.post("/my-reviews", async (req, res) => {
-    //   const newReview = req.body;
-    //   const result = await myReviewsColl.insertOne(newReview);
-    //   res.send(result);
-    // });
     app.post("/all-reviews", async (req, res) => {
       const newReview = req.body;
       const result = await allReviewsColl.insertOne(newReview);
@@ -37,10 +31,9 @@ async function run() {
     });
     app.post("/add-review", async (req, res) => {
       const reviewData = req.body;
-      const result = myReviewsColl.insertOne(reviewData);
+      const result = allReviewsColl.insertOne(reviewData);
       res.send(result);
     });
-
     app.get("/review-derails/:id", async (req, res) => {
       const { id } = req.params;
       // const query = { _id: new ObjectId(id) };
@@ -66,22 +59,33 @@ async function run() {
       if (email) {
         query.reviewerEmail = email;
       }
-      const result = await myReviewsColl.find(query).toArray();
+      const result = await allReviewsColl.find(query).toArray();
       res.send(result);
     });
 
     app.get("/my-review/:id", async (req, res) => {
       const { id } = req.params;
       const query = { _id: new ObjectId(id) };
-      const result = await myReviewsColl.findOne(query);
+      const result = await allReviewsColl.findOne(query);
       res.send(result);
     });
-
+    app.patch("/my-review/:id", async (req, res) => {
+      const { id } = req.params;
+      const updatedData = req.body;
+      const query = { _id: new ObjectId(id) };
+      const update = {
+        $set: {
+          ...updatedData,
+        },
+      };
+      const result = await allReviewsColl.updateOne(query, update);
+      res.send(result);
+    });
     app.delete("/my-review/:id", async (req, res) => {
       const { id } = req.params;
       console.log(id);
       const query = { _id: new ObjectId(id) };
-      const result = await myReviewsColl.deleteOne(query);
+      const result = await allReviewsColl.deleteOne(query);
       res.send(result);
     });
 
