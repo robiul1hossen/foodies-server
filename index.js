@@ -36,7 +36,15 @@ async function run() {
       res.send(result);
     });
     app.get("/all-reviews", async (req, res) => {
-      const result = await allReviewsColl.find().limit(6).toArray();
+      const result = await allReviewsColl.find().toArray();
+      res.send(result);
+    });
+    app.get("/top-rated-reviews", async (req, res) => {
+      const result = await allReviewsColl
+        .find()
+        .sort({ rating: -1 })
+        .limit(6)
+        .toArray();
       res.send(result);
     });
 
