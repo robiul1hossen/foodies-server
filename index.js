@@ -40,6 +40,7 @@ async function run() {
       const result = myReviewsColl.insertOne(reviewData);
       res.send(result);
     });
+
     app.get("/review-derails/:id", async (req, res) => {
       const { id } = req.params;
       // const query = { _id: new ObjectId(id) };
@@ -61,12 +62,26 @@ async function run() {
     });
     app.get("/my-review", async (req, res) => {
       const { email } = req.query;
-      console.log(email);
       const query = {};
       if (email) {
         query.reviewerEmail = email;
       }
       const result = await myReviewsColl.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get("/my-review/:id", async (req, res) => {
+      const { id } = req.params;
+      const query = { _id: new ObjectId(id) };
+      const result = await myReviewsColl.findOne(query);
+      res.send(result);
+    });
+
+    app.delete("/my-review/:id", async (req, res) => {
+      const { id } = req.params;
+      console.log(id);
+      const query = { _id: new ObjectId(id) };
+      const result = await myReviewsColl.deleteOne(query);
       res.send(result);
     });
 
