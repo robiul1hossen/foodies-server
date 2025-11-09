@@ -23,10 +23,16 @@ async function run() {
 
     const reviews = client.db("reviews");
     const myReviewsColl = reviews.collection("myReviews");
+    const allReviewsColl = reviews.collection("allReviews");
 
     app.post("/my-reviews", async (req, res) => {
       const newReview = req.body;
       const result = await myReviewsColl.insertOne(newReview);
+      res.send(result);
+    });
+    app.post("/all-reviews", async (req, res) => {
+      const newReview = req.body;
+      const result = await allReviewsColl.insertOne(newReview);
       res.send(result);
     });
 
