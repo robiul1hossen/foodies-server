@@ -4,10 +4,35 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 3000;
 const app = express();
 
-const uri =
-  "mongodb+srv://foodies-server:foodies-server@cluster0.jtzysaz.mongodb.net/?appName=Cluster0";
+//firebase admin sdk
+const admin = require("firebase-admin");
+const serviceAccount = require("./foodies-firebase-adminsdk-key.json");
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+// middleWear
 app.use(cors());
 app.use(express.json());
+
+const verifyFirebaseToken = async (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    res.status(401).send({ message: "unauthorize access" });
+  }
+  const token = authorization.split(" ")[1];
+  if (!token) {
+    res.status(401).send({ message: "unauthorize access" });
+  }
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    req.token_email = decoded.email;
+    next();
+  } catch (error) {}
+};
+
+const uri =
+  "mongodb+srv://foodies-server:foodies-server@cluster0.jtzysaz.mongodb.net/?appName=Cluster0";
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -29,11 +54,6 @@ async function run() {
       const result = await allReviewsColl.insertOne(newReview);
       res.send(result);
     });
-    app.post("/add-review", async (req, res) => {
-      const reviewData = req.body;
-      const result = allReviewsColl.insertOne(reviewData);
-      res.send(result);
-    });
     app.get("/review-derails/:id", async (req, res) => {
       const { id } = req.params;
       // const query = { _id: new ObjectId(id) };
@@ -53,16 +73,21 @@ async function run() {
         .toArray();
       res.send(result);
     });
-    app.get("/my-review", async (req, res) => {
+    app.get("/my-review", verifyFirebaseToken, async (req, res) => {
       const { email } = req.query;
       const query = {};
+      if (!email) {
+        res.status(301).send({ message: "email is required" });
+      }
       if (email) {
         query.reviewerEmail = email;
+        if (email !== req.token_email) {
+          res.status(403).send({ message: "forbidden access" });
+        }
       }
       const result = await allReviewsColl.find(query).toArray();
       res.send(result);
     });
-
     app.get("/my-review/:id", async (req, res) => {
       const { id } = req.params;
       const query = { _id: new ObjectId(id) };
