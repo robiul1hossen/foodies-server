@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 3000;
 const app = express();
@@ -20,7 +21,7 @@ const verifyFirebaseToken = async (req, res, next) => {
   if (!authorization) {
     res.status(401).send({ message: "unauthorize access" });
   }
-  const token = authorization.split(" ")[1];
+  const token = authorization?.split(" ")[1];
   if (!token) {
     res.status(401).send({ message: "unauthorize access" });
   }
@@ -31,8 +32,7 @@ const verifyFirebaseToken = async (req, res, next) => {
   } catch (error) {}
 };
 
-const uri =
-  "mongodb+srv://foodies-server:foodies-server@cluster0.jtzysaz.mongodb.net/?appName=Cluster0";
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.jtzysaz.mongodb.net/?appName=Cluster0`;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -54,10 +54,10 @@ async function run() {
       const result = await allReviewsColl.insertOne(newReview);
       res.send(result);
     });
-    app.get("/review-derails/:id", async (req, res) => {
+    app.get("/review-derails/:id", verifyFirebaseToken, async (req, res) => {
       const { id } = req.params;
-      // const query = { _id: new ObjectId(id) };
-      const query = { _id: id };
+      const query = { _id: new ObjectId(id) };
+      // const query = { _id: id };
       const result = await allReviewsColl.findOne(query);
       res.send(result);
     });
@@ -108,7 +108,6 @@ async function run() {
     });
     app.delete("/my-review/:id", async (req, res) => {
       const { id } = req.params;
-      console.log(id);
       const query = { _id: new ObjectId(id) };
       const result = await allReviewsColl.deleteOne(query);
       res.send(result);
