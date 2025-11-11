@@ -53,6 +53,7 @@ async function run() {
 
     const reviews = client.db("reviews");
     const allReviewsColl = reviews.collection("allReviews");
+    const favoriteColl = reviews.collection("favorite");
 
     app.post("/all-reviews", async (req, res) => {
       const newReview = req.body;
@@ -124,6 +125,54 @@ async function run() {
         query.category = category;
       }
       const result = await allReviewsColl.find(query).limit(5).toArray();
+      res.send(result);
+    });
+    app.get("/latest-review", async (req, res) => {
+      const result = await allReviewsColl
+        .find()
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .toArray();
+      res.send(result);
+    });
+    app.post("/favorite", async (req, res) => {
+      const { id, email } = req.body;
+      const favorite = { id, email };
+      const query = { id: favorite.id };
+      const existing = await favoriteColl.findOne(query);
+      if (existing) {
+        return res.send({ message: "Already in favorites" });
+      }
+      const result = await favoriteColl.insertOne(favorite);
+      res.send(result);
+    });
+
+    app.get("/favorite/:email", async (req, res) => {
+      const email = req.params.email;
+      // const result = await favoriteColl
+      //   .aggregate([
+      //     {
+      //       $match: { email: email },
+      //     },
+      //     {
+      //       $lookup: {
+      //         from: allReviewsColl,
+      //         localField: "id",
+      //         foreignField: "_id",
+      //         as: "reviewData",
+      //       },
+      //     },
+      //     {
+      //       $unwind: "$reviewData",
+      //     },
+      //   ])
+      //   .toArray();
+      const favorites = await favoriteColl.find({ email: email }).toArray();
+      const ids = favorites.map((f) => new ObjectId(f.id));
+      const result = await allReviewsColl
+        .aggregate([{ $match: { _id: { $in: ids } } }])
+        .toArray();
+      // console.log(ids);
       res.send(result);
     });
 
