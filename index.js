@@ -7,7 +7,12 @@ const app = express();
 
 //firebase admin sdk
 const admin = require("firebase-admin");
-const serviceAccount = require("./foodies-firebase-adminsdk-key.json");
+
+const decoded = Buffer.from(process.env.FIREBASE_SECRET_KEY, "base64").toString(
+  "utf8"
+);
+const serviceAccount = JSON.parse(decoded);
+
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
@@ -110,6 +115,15 @@ async function run() {
       const { id } = req.params;
       const query = { _id: new ObjectId(id) };
       const result = await allReviewsColl.deleteOne(query);
+      res.send(result);
+    });
+    app.get("/related-category", async (req, res) => {
+      const { category } = req?.query;
+      const query = {};
+      if (category) {
+        query.category = category;
+      }
+      const result = await allReviewsColl.find(query).limit(5).toArray();
       res.send(result);
     });
 
