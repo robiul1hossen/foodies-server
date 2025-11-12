@@ -49,7 +49,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const reviews = client.db("reviews");
     const allReviewsColl = reviews.collection("allReviews");
@@ -68,9 +68,36 @@ async function run() {
       res.send(result);
     });
     app.get("/all-reviews", async (req, res) => {
-      const result = await allReviewsColl.find().toArray();
+      const result = await allReviewsColl
+        .find()
+        .sort({ createAt: -1 })
+        .toArray();
       res.send(result);
     });
+    app.get("/search-reviews", async (req, res) => {
+      const search = req.query.search || "";
+      console.log(search);
+      let query = {};
+      if (search) {
+        query = {
+          $or: [
+            { foodName: { $regex: search, $options: "i" } },
+            { restaurantName: { $regex: search, $options: "i" } },
+            { restaurantLocation: { $regex: search, $options: "i" } },
+            { reviewerName: { $regex: search, $options: "i" } },
+          ],
+        };
+      }
+
+      try {
+        const result = await allReviewsColl.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Internal Server Error" });
+      }
+    });
+
     app.get("/top-rated-reviews", async (req, res) => {
       const result = await allReviewsColl
         .find()
@@ -130,43 +157,27 @@ async function run() {
     app.get("/latest-review", async (req, res) => {
       const result = await allReviewsColl
         .find()
-        .sort({ createdAt: -1 })
+        .sort({ createAt: -1 })
         .limit(6)
         .toArray();
       res.send(result);
     });
     app.post("/favorite", async (req, res) => {
       const { id, email } = req.body;
-      const favorite = { id, email };
-      const query = { id: favorite.id };
+
+      if (!id || !email) {
+        return res.status(400).send({ message: "Missing id or email" });
+      }
+      const query = { email: email, id: id };
       const existing = await favoriteColl.findOne(query);
       if (existing) {
-        return res.send({ message: "Already in favorites" });
+        return res.send({ message: "Already in favorites2" });
       }
-      const result = await favoriteColl.insertOne(favorite);
+      const result = await favoriteColl.insertOne({ id, email });
       res.send(result);
     });
-
     app.get("/favorite/:email", async (req, res) => {
       const email = req.params.email;
-      // const result = await favoriteColl
-      //   .aggregate([
-      //     {
-      //       $match: { email: email },
-      //     },
-      //     {
-      //       $lookup: {
-      //         from: allReviewsColl,
-      //         localField: "id",
-      //         foreignField: "_id",
-      //         as: "reviewData",
-      //       },
-      //     },
-      //     {
-      //       $unwind: "$reviewData",
-      //     },
-      //   ])
-      //   .toArray();
       const favorites = await favoriteColl.find({ email: email }).toArray();
       const ids = favorites.map((f) => new ObjectId(f.id));
       const result = await allReviewsColl
@@ -175,8 +186,14 @@ async function run() {
       // console.log(ids);
       res.send(result);
     });
+    app.delete("/favorite/:id", async (req, res) => {
+      const { id } = req.params;
+      const query = { _id: new ObjectId(id) };
+      const result = await favoriteColl.deleteOne(query);
+      res.send(result);
+    });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
@@ -188,11 +205,9 @@ async function run() {
 run().catch(console.dir);
 
 app.get("/", (req, res) => {
-  res.send("hello server");
+  res.send("server is running");
 });
 
 app.listen(port, () => {
   console.log(`app is running on http://localhost:${port}`);
 });
-
-// foodies-server
