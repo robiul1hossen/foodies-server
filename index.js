@@ -70,7 +70,7 @@ async function run() {
     app.get("/all-reviews", async (req, res) => {
       const result = await allReviewsColl
         .find()
-        .sort({ createAt: -1 })
+        .sort({ createAt: 1 })
         .toArray();
       res.send(result);
     });
@@ -150,7 +150,11 @@ async function run() {
       if (category) {
         query.category = category;
       }
-      const result = await allReviewsColl.find(query).limit(4).toArray();
+      const result = await allReviewsColl
+        .find(query)
+        .sort({ createAt: -1 })
+        .limit(4)
+        .toArray();
       res.send(result);
     });
     app.get("/latest-review", async (req, res) => {
