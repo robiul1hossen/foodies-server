@@ -97,7 +97,6 @@ async function run() {
         res.status(500).send({ message: "Internal Server Error" });
       }
     });
-
     app.get("/top-rated-reviews", async (req, res) => {
       const result = await allReviewsColl
         .find()
@@ -121,13 +120,13 @@ async function run() {
       const result = await allReviewsColl.find(query).toArray();
       res.send(result);
     });
-    app.get("/my-review/:id", async (req, res) => {
+    app.get("/my-review/:id", verifyFirebaseToken, async (req, res) => {
       const { id } = req.params;
       const query = { _id: new ObjectId(id) };
       const result = await allReviewsColl.findOne(query);
       res.send(result);
     });
-    app.patch("/my-review/:id", async (req, res) => {
+    app.patch("/my-review/:id", verifyFirebaseToken, async (req, res) => {
       const { id } = req.params;
       const updatedData = req.body;
       const query = { _id: new ObjectId(id) };
@@ -139,7 +138,7 @@ async function run() {
       const result = await allReviewsColl.updateOne(query, update);
       res.send(result);
     });
-    app.delete("/my-review/:id", async (req, res) => {
+    app.delete("/my-review/:id", verifyFirebaseToken, async (req, res) => {
       const { id } = req.params;
       const query = { _id: new ObjectId(id) };
       const result = await allReviewsColl.deleteOne(query);
@@ -151,7 +150,7 @@ async function run() {
       if (category) {
         query.category = category;
       }
-      const result = await allReviewsColl.find(query).limit(5).toArray();
+      const result = await allReviewsColl.find(query).limit(4).toArray();
       res.send(result);
     });
     app.get("/latest-review", async (req, res) => {
@@ -162,7 +161,7 @@ async function run() {
         .toArray();
       res.send(result);
     });
-    app.post("/favorite", async (req, res) => {
+    app.post("/favorite", verifyFirebaseToken, async (req, res) => {
       const { id, email } = req.body;
 
       if (!id || !email) {
@@ -176,7 +175,7 @@ async function run() {
       const result = await favoriteColl.insertOne({ id, email });
       res.send(result);
     });
-    app.get("/favorite/:email", async (req, res) => {
+    app.get("/favorite/:email", verifyFirebaseToken, async (req, res) => {
       const email = req.params.email;
       const favorites = await favoriteColl.find({ email: email }).toArray();
       const ids = favorites.map((f) => new ObjectId(f.id));
@@ -186,7 +185,7 @@ async function run() {
       // console.log(ids);
       res.send(result);
     });
-    app.delete("/favorite/:id", async (req, res) => {
+    app.delete("/favorite/:id", verifyFirebaseToken, async (req, res) => {
       const { id } = req.params;
       const query = { _id: new ObjectId(id) };
       const result = await favoriteColl.deleteOne(query);
